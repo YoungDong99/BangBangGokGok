@@ -1,0 +1,374 @@
+<header>
+  <div class="header-content">
+    <div class="header-text">
+      <h1>아파트 매매 전문 부동산</h1>
+      <p>서울 아파트 실매물 정보 제공</p>
+    </div>
+  </div>
+  <style>
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      background-image: url('/static/img/seoul.png');
+      background-size: contain;
+      background-repeat: repeat-x;
+      background-position: center;
+      height: 180px;
+      position: relative;
+    }
+    .header-content::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(135, 206, 235, 0.8);
+    }
+    .header-text {
+      flex: 1;
+      position: relative;
+      z-index: 1;
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+    .header-text h1 {
+      margin: 0;
+      font-size: 2em;
+    }
+    .header-text p {
+      margin: 5px 0 0;
+      font-size: 1.1em;
+    }
+    .logo {
+      margin-left: 30px;
+      height: 100px;
+      width: auto;
+    }
+
+    .price-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .price-wrapper input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      font-size: 1em;
+      border-radius: 6px;
+      border: 1px solid #b0bec5;
+      box-sizing: border-box;
+    }
+
+    .price-wrapper .unit {
+      color: #888;
+      font-size: 1em;
+      white-space: nowrap;
+    }
+
+    .price-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .price-ignore-wrapper {
+      display: flex;
+      align-items: center;
+    }
+
+    .price-display {
+      color: #666;
+      font-size: 0.9em;
+    }
+
+    .price-error {
+      text-align: right;
+      color: #d32f2f;
+      font-size: 0.8em;
+      margin-top: 4px;
+      min-height: 1.2em;
+    }
+  </style>
+</header>
+<nav>
+  <a href="/">홈</a>
+  <a href="#" id="searchBtn">매물검색</a>
+  <a href="/favorites">관심목록</a>
+  <a href="/intro">회사소개</a>
+</nav>
+
+<!-- 모달 백드롭 -->
+<div class="modal-backdrop" id="modalBackdrop"></div>
+
+<!-- 매물검색 모달 -->
+<div
+  class="modal"
+  id="searchModal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="modalTitle"
+>
+  <div class="modal-title" id="modalTitle">매물 검색</div>
+  <div class="modal-body">
+    <form id="searchForm" action="./search" method="get">
+      <label for="city">시/도</label>
+      <select id="city" name="city" required>
+        <option value="">선택</option>
+        <option value="서울">서울</option>
+        <option value="경기">경기</option>
+        <option value="인천">인천</option>
+      </select>
+
+      <label for="gu">군/구</label>
+      <select id="gu" name="gu" required disabled>
+        <option value="">시/도를 먼저 선택하세요</option>
+      </select>
+
+      <label for="price">금액</label>
+      <div class="price-wrapper">
+        <input
+          type="text"
+          id="priceInput"
+          name="priceInput"
+          placeholder="예: 50"
+          required
+          class="form-control"
+        />
+        <span class="unit">천만원</span>
+      </div>
+      <div class="price-bottom">
+        <div class="price-ignore-wrapper">
+          <label style="font-size: 0.9em">
+            <input type="checkbox" id="priceIgnore" /> 상관없음
+          </label>
+        </div>
+        <div class="price-display" id="priceDisplay"></div>
+      </div>
+      <div class="price-error" id="priceError"></div>
+
+      <label for="pyung">평수</label>
+      <select id="pyung" name="pyung" required>
+        <option value="">선택</option>
+        <option value="1">16 평형이하</option>
+        <option value="2">16~24 평형</option>
+        <option value="3">24~33 평형</option>
+        <option value="4">33 평형 이상</option>
+        <option value="0">상관없음</option>
+      </select>
+
+      <label for="years">아파트 연식</label>
+      <select id="years" name="years" required>
+        <option value="5">신축(5년 이내)</option>
+        <option value="0">상관없음</option>
+      </select>
+
+      <label for="station">역세권</label>
+      <select id="station" name="station">
+        <option value="">선택</option>
+        <option value="5">도보 5분</option>
+        <option value="15">도보 15분 이내</option>
+        <option value="0">상관없음</option>
+      </select>
+
+      <div class="modal-actions">
+        <button type="button" class="close-btn" id="modalCloseBtn">닫기</button>
+        <button type="submit">검색</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const searchBtn = document.getElementById("searchBtn");
+  const modal = document.getElementById("searchModal");
+  const backdrop = document.getElementById("modalBackdrop");
+  const closeBtn = document.getElementById("modalCloseBtn");
+
+  function openModal() {
+    modal.classList.add("active");
+    backdrop.classList.add("active");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeModal() {
+    modal.classList.remove("active");
+    backdrop.classList.remove("active");
+    document.body.style.overflow = "";
+  }
+
+  searchBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    openModal();
+  });
+
+  closeBtn.addEventListener("click", closeModal);
+  backdrop.addEventListener("click", closeModal);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeModal();
+  });
+
+  // 서울 자치구 목록
+  const seoulDistricts = [
+    "서울 전체",
+    "강남구",
+    "강동구",
+    "강북구",
+    "강서구",
+    "관악구",
+    "광진구",
+    "구로구",
+    "금천구",
+    "노원구",
+    "도봉구",
+    "동대문구",
+    "동작구",
+    "마포구",
+    "서대문구",
+    "서초구",
+    "성동구",
+    "성북구",
+    "송파구",
+    "양천구",
+    "영등포구",
+    "용산구",
+    "은평구",
+    "종로구",
+    "중구",
+    "중랑구",
+  ];
+
+  const citySelect = document.getElementById("city");
+  const districtSelect = document.getElementById("gu");
+
+  citySelect.addEventListener("change", function () {
+    const selectedCity = this.value;
+    districtSelect.innerHTML = "";
+
+    if (selectedCity === "서울") {
+      districtSelect.disabled = false;
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "선택";
+      districtSelect.appendChild(defaultOption);
+
+      seoulDistricts.forEach((district) => {
+        const option = document.createElement("option");
+        option.value = district;
+        option.textContent = district;
+        districtSelect.appendChild(option);
+      });
+    } else {
+      districtSelect.disabled = true;
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "서울을 선택해야 합니다";
+      districtSelect.appendChild(option);
+    }
+  });
+
+  // 필수 항목 체크
+  document
+    .getElementById("searchForm")
+    .addEventListener("submit", function (e) {
+      const city = citySelect.value;
+      const district = districtSelect.value;
+      const price = document.getElementById("price").value;
+      const household = document.getElementById("household").value;
+
+      if (!city || !district || !price || !household) {
+        e.preventDefault();
+        alert("모든 필수 항목을 선택해주세요.");
+      }
+    });
+
+  const priceInput = document.getElementById("priceInput");
+  const priceDisplay = document.getElementById("priceDisplay");
+  const priceError = document.getElementById("priceError");
+  const priceIgnore = document.getElementById("priceIgnore");
+
+  function formatPrice(value) {
+    if (!value) return "";
+
+    const num = parseInt(value);
+    if (isNaN(num)) return "";
+
+    if (num >= 1000) {
+      const billions = Math.floor(num / 10);
+      const millions = num % 10;
+      if (millions === 0) {
+        return `${billions}억원`;
+      }
+      return `${billions}억 ${millions}천만원`;
+    } else if (num >= 10) {
+      const billions = Math.floor(num / 10);
+      const millions = num % 10;
+      if (millions === 0) {
+        return `${billions}억원`;
+      }
+      return `${billions}억 ${millions}천만원`;
+    } else {
+      return `${num}천만원`;
+    }
+  }
+
+  priceInput.addEventListener("input", function (e) {
+    const value = e.target.value;
+
+    // 숫자만 입력 가능하도록
+    if (value && !/^\d+$/.test(value)) {
+      e.target.value = value.replace(/[^\d]/g, "");
+      return;
+    }
+
+    // 최대값 체크
+    if (parseInt(value) > 9999) {
+      priceError.textContent = "입력가능한 최대금액 초과";
+      e.target.value = e.target.value.slice(0, 4);
+      return;
+    } else {
+      priceError.textContent = "";
+    }
+
+    // 금액 표시 업데이트
+    priceDisplay.textContent = formatPrice(value);
+  });
+
+  // 체크 시 금액 입력란 비활성화
+  priceIgnore.addEventListener("change", function () {
+    if (this.checked) {
+      priceInput.disabled = true;
+      priceInput.value = ""; // 입력값 초기화
+      priceDisplay.textContent = ""; // 금액 표시 초기화
+      priceError.textContent = ""; // 에러 메시지 초기화
+    } else {
+      priceInput.disabled = false;
+    }
+  });
+
+  // 제출 시 필수 항목 검사
+  document
+    .getElementById("searchForm")
+    .addEventListener("submit", function (e) {
+      const city = citySelect.value;
+      const district = districtSelect.value;
+      const household = document.getElementById("household").value;
+
+      // 금액 필수 여부는 priceInput이 disabled 상태인지 확인
+      if (
+        !city ||
+        !district ||
+        (!priceInput.value && !priceInput.disabled) ||
+        !household
+      ) {
+        e.preventDefault();
+        alert("모든 필수 항목을 선택해주세요.");
+      }
+    });
+</script>
