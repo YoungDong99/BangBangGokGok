@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>*방방곡곡* 내게 맞는 아파트 검색</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <style></style>
+  </head>
+  <body>
+    <h2>추천 아파트 결과</h2>
+    {% if results %}
+    <table border="1">
+      <tr>
+        <th>이름</th>
+        <th>자치구</th>
+        <th>동</th>
+        <th>금액(만원)</th>
+        <th>평수</th>
+        <th>연식</th>
+        <th>역세권(거리)</th>
+        <th>유사도</th>
+      </tr>
+      {% for item in results %}
+      <tr>
+        <td>{{ item.name }}</td>
+        <td>{{ item.gu }}</td>
+        <td>{{ item.dong }}</td>
+        <td>{{ item.price }}</td>
+        <td>{{ item.pyung }}</td>
+        <td>{{ item.years }}년</td>
+        <td>{{ item.sub_dist }}m</td>
+        <td>{{ '{:.2f}'.format(item.similarity) }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p>추천 결과가 없습니다.</p>
+    {% endif %}
+
+    <script></script>
+  </body>
+</html>
