@@ -105,6 +105,106 @@ class MainService:
             print("getlatLon - HTTPError:", e.code, e.reason)
         except urllib.error.URLError as e:
             print("getlatLon - URLError:", e.reason)
+ 
+    #위치정보 기반으로 최종 아파트 매물 리스트 가져오기
+    def getAptList(self, aptCon, coords):     
+        
+        latitudes = [lat for lat, lon in coords]
+        longitudes = [lon for lat, lon in coords]
+
+        # 최댓값과 최솟값 계산
+        min_lat = min(latitudes)
+        max_lat = max(latitudes)
+        min_lon = min(longitudes)
+        max_lon = max(longitudes)
+
+        # 결과 출력
+        # print(f"최소 위도: {min_lat}")
+        # print(f"최대 위도: {max_lat}")
+        # print(f"최소 경도: {min_lon}")
+        # print(f"최대 경도: {max_lon}")
+        
+        #최종 파라미터
+        base_url = "https://new.land.naver.com/api/complexes/single-markers/2.0"
+        # 파라미터 정의 (JSON 형태 + 설명 주석)
+        params = {
+            "cortarNo": aptCon['cortarNo'],              # 행정동 코드 (예: 서울 강남구 역삼동)
+            "zoom": 16,                            # 지도 줌 레벨
+            "priceType": "RETAIL",                 # 가격 타입: RETAIL = 일반매매
+            "markerId": "",                        # 마커 ID (선택된 마커가 있을 경우 지정)
+            "markerType": "",                      # 마커 타입 (ex: 단지, 건물 등)
+            "selectedComplexNo": "",              # 선택된 단지 번호
+            "selectedComplexBuildingNo": "",      # 선택된 건물 번호
+            "fakeComplexMarker": "",              # 가상 단지 마커 여부
+            "realEstateType": "APT",              # 부동산 유형: APT = 아파트
+            "tradeType": "A1",                    # 거래 유형: A1 = 매매, B1 = 전세, B2 = 월세
+            "tag": "::::::::",                    # 태그 필터 (URL 인코딩된 상태, 비워두면 필터 없음)
+            "rentPriceMin": 0,                    # 최소 임대 가격
+            "rentPriceMax": aptCon['priceMax'],          # 최대 임대 가격
+            "priceMin": aptCon['priceMin'],                        # 최소 매매가 (단위: 만 원 → 5억 원)
+            "priceMax": aptCon['priceMax'],                   # 최대 매매가 (단위: 만 원 → 12억 원)
+            "areaMin": aptCon['areaMin'],                       # 최소 전용면적 (㎡)
+            "areaMax": aptCon['areaMax'],                       # 최대 전용면적 (㎡)
+            "oldBuildYears": aptCon['years'],                  # 오래된 건물 기준 필터 (미지정)
+            "recentlyBuildYears": "",            # 최근 건축 연도 필터 (미지정)
+            "minHouseHoldCount": "" ,            # 최소 세대 수
+            "maxHouseHoldCount": "",             # 최대 세대 수 (미지정)
+            "showArticle": "false",              # 매물 정보 표시 여부
+            "sameAddressGroup": "false",         # 동일 주소 그룹 여부
+            "minMaintenanceCost": "",            # 최소 관리비 (미지정)
+            "maxMaintenanceCost": "",            # 최대 관리비 (미지정)
+            "directions": "",                    # 방향 (동향, 남향 등 필터, 미지정)
+            "leftLon": {min_lon},              # 지도 좌측 경도
+            "rightLon": {max_lon},             # 지도 우측 경도
+            "topLat": {max_lat},                # 지도 상단 위도
+            "bottomLat": {min_lat},             # 지도 하단 위도
+            "isPresale": "false"                 # 분양 여부: false는 기존 매물
+        }
+        
+        query_string = urllib.parse.urlencode(params, doseq=True)
+        final_url = f"{base_url}?{query_string}"
+        # print(final_url)
+        
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+        }
+        fin_req = urllib.request.Request(final_url, headers=headers)
+        
+        try:
+            with urllib.request.urlopen(fin_req) as response:
+                byte_data = response.read()
+                text_data = byte_data.decode("utf-8")
+                json_data = json.loads(text_data)
+                
+                return json_data
+        
+        except urllib.error.HTTPError as e:
+            print("getAptList - HTTPError:", e.code, e.reason)
+        except urllib.error.URLError as e:
+            print("getAptList - URLError:", e.reason)
+
+    # 아파트 매물 상세 정보 가져오기
+    def getAptSaleInfo(self, complexNo):
+        url = f"https://new.land.naver.com/api/complexes/overview/{complexNo}?complexNo={complexNo}&isClickedMarker=true"
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+        }
+        req = urllib.request.Request(url, headers=headers)
+
+        try:
+            with urllib.request.urlopen(req) as response:
+                byte_data = response.read()
+                text_data = byte_data.decode("utf-8")
+                json_data = json.loads(text_data)
+                
+                return json_data
+
+        except urllib.error.HTTPError as e:
+            print("getAptSaleInfo - HTTPError:", e.code, e.reason)
+        except urllib.error.URLError as e:
+            print("getAptSaleInfo - URLError:", e.reason)
+
 
     
 
